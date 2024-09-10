@@ -15,6 +15,10 @@ st.title('Obesity Risk Clustering App')
 # Load the scaled cleaned CSV file
 df = pd.read_csv('processed_clean_df.csv')
 
+# Standardize data
+scaler = StandardScaler()
+df_scaled = scaler.fit_transform(df)
+
 # Select clustering algorithm
 cluster_model = st.selectbox(
     'Select a clustering model',
@@ -31,7 +35,8 @@ if cluster_model == 'KMeans':
     max_iter = st.slider('Maximum iterations', min_value=100, max_value=1000, value=300)
 
 elif cluster_model == 'MeanShift':
-    bandwidth = st.slider('Bandwidth', min_value=0.1, max_value=5.0, value=1.0, step=0.1)
+    # No parameters for MeanShift
+    pass
 
 elif cluster_model == 'DBSCAN':
     eps = st.slider('Epsilon', min_value=0.1, max_value=2.0, value=0.5, step=0.1)
@@ -55,44 +60,44 @@ apply_pca = st.checkbox('Apply PCA for visualization')
 # Perform clustering based on selected model
 if cluster_model == 'KMeans':
     clustering = KMeans(n_clusters=n_clusters, init=init_method, n_init=10, max_iter=max_iter)
-    labels = clustering.fit_predict(df)
+    labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'MeanShift':
-    clustering = MeanShift(bandwidth=bandwidth)
-    labels = clustering.fit_predict(df)
+    clustering = MeanShift()
+    labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'DBSCAN':
     clustering = DBSCAN(eps=eps, min_samples=min_samples)
-    labels = clustering.fit_predict(df)
+    labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'Gaussian Mixture':
     clustering = GaussianMixture(n_components=n_clusters, covariance_type=covariance_type, max_iter=max_iter)
-    labels = clustering.fit_predict(df)
+    labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'Agglomerative Hierarchical Clustering':
     clustering = AgglomerativeClustering(n_clusters=n_clusters, affinity=affinity, linkage=linkage)
-    labels = clustering.fit_predict(df)
+    labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'Spectral Clustering':
     clustering = SpectralClustering(n_clusters=n_clusters, affinity=affinity, n_neighbors=n_neighbors)
-    labels = clustering.fit_predict(df)
+    labels = clustering.fit_predict(df_scaled)
 
 # Display PCA visualization
 if apply_pca:
     pca = PCA(n_components=2)
-    pca_data = pca.fit_transform(df)
+    pca_data = pca.fit_transform(df_scaled)
     pca_df = pd.DataFrame(pca_data, columns=['PC1', 'PC2'])
     pca_df['Cluster'] = labels
 
     st.write('PCA Result:')
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')  # Adjust legend position
     st.pyplot(fig)
 
 # Silhouette Score
 if len(np.unique(labels)) > 1:  # Silhouette score needs at least 2 clusters
-    silhouette_avg = silhouette_score(df, labels)
+    silhouette_avg = silhouette_score(df_scaled, labels)
     st.write(f'Silhouette Score: {silhouette_avg:.2f}')
 
 # Number of records in each cluster
@@ -109,3 +114,4 @@ st.write(cluster_mean_stats)
 st.subheader('Median statistics for each cluster:')
 cluster_median_stats = pd.DataFrame(df).groupby(labels).median()
 st.write(cluster_median_stats)
+
