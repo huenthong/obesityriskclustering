@@ -91,7 +91,7 @@ if apply_pca:
     
     # Adjust legend
     handles, labels = scatter.get_legend_handles_labels()
-    ax.legend(handles, labels, title='Cluster', loc='upper left', bbox_to_anchor=(1, 1), borderaxespad=0.)
+    ax.legend(handles, labels, title='Cluster', loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 
     st.pyplot(fig)
 # Silhouette Score
