@@ -35,7 +35,7 @@ if cluster_model in ['KMeans', 'Gaussian Mixture', 'Agglomerative Hierarchical C
 apply_pca = st.checkbox('Apply PCA for visualization')
 
 # Perform clustering based on selected model
-def perform_clustering(data, model, n_clusters=None):
+def perform_clustering(df, model, n_clusters=None):
     if model == 'KMeans':
         clustering = KMeans(n_clusters=n_clusters, n_init=10)
     elif model == 'MeanShift':
@@ -50,22 +50,22 @@ def perform_clustering(data, model, n_clusters=None):
         clustering = SpectralClustering(n_clusters=n_clusters)
 
     if model == 'Gaussian Mixture':
-        labels = clustering.fit_predict(data)
+        labels = clustering.fit_predict(df)
     else:
-        labels = clustering.fit_predict(data)
+        labels = clustering.fit_predict(df)
 
     return labels
 
 # Perform clustering
 if cluster_model != 'MeanShift':  # MeanShift does not require n_clusters
-    labels = perform_clustering(data, cluster_model, n_clusters=n_clusters)
+    labels = perform_clustering(df, cluster_model, n_clusters=n_clusters)
 else:
-    labels = perform_clustering(data, cluster_model)
+    labels = perform_clustering(df, cluster_model)
 
 # Display PCA visualization
 if apply_pca:
     pca = PCA(n_components=2)
-    pca_data = pca.fit_transform(data)
+    pca_data = pca.fit_transform(df)
     pca_df = pd.DataFrame(pca_data, columns=['PC1', 'PC2'])
     pca_df['Cluster'] = labels
 
@@ -76,7 +76,7 @@ if apply_pca:
 
 # Silhouette Score
 if len(np.unique(labels)) > 1:  # Silhouette score needs at least 2 clusters
-    silhouette_avg = silhouette_score(data, labels)
+    silhouette_avg = silhouette_score(df, labels)
     st.write(f'Silhouette Score: {silhouette_avg:.2f}')
 
 # Number of records in each cluster
@@ -86,8 +86,13 @@ st.write(cluster_counts)
 
 # Mean statistics for each cluster
 st.write('Mean statistics for each cluster:')
-cluster_mean_stats = pd.DataFrame(data).groupby(labels).mean()
+cluster_mean_stats = pd.DataFrame(df).groupby(labels).mean()
 st.write(cluster_mean_stats)
+
+# Median statistics for each cluster
+st.write('Median statistics for each cluster:')
+cluster_median_stats = pd.DataFrame(df).groupby(labels).median()
+st.write(cluster_median_stats)
 
 # Median statistics for each cluster
 st.write('Median statistics for each cluster:')
