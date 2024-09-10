@@ -96,5 +96,5 @@ st.write(cluster_median_stats)
 
 # Median statistics for each cluster
 st.write('Median statistics for each cluster:')
-cluster_median_stats = pd.DataFrame(data).groupby(labels).median()
+cluster_median_stats = pd.DataFrame(df).groupby(labels).median()
 st.write(cluster_median_stats)
