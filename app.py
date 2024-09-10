@@ -86,11 +86,14 @@ if apply_pca:
     pca_df['Cluster'] = labels
 
     st.write('PCA Result:')
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
-    ax.legend(loc='best', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
-    st.pyplot(fig)
+    fig, ax = plt.subplots(figsize=(12, 8))  # Increased figure width for better layout
+    scatter = sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
+    
+    # Adjust legend
+    handles, labels = scatter.get_legend_handles_labels()
+    ax.legend(handles, labels, title='Cluster', loc='upper left', bbox_to_anchor=(1, 1), borderaxespad=0.)
 
+    st.pyplot(fig)
 # Silhouette Score
 if len(np.unique(labels)) > 1:  # Silhouette score needs at least 2 clusters
     silhouette_avg = silhouette_score(df, labels)
