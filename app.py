@@ -10,16 +10,11 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Setting the environment variable for avoiding the KMeans memory leak warning
-#os.environ['OMP_NUM_THREADS'] = '9'
-
 # Streamlit app title
 st.title('Obesity Risk Clustering App')
 
 # Load the scaled cleaned CSV file
-
 df = pd.read_csv('processed_clean_df.csv')
-
 
 # Select clustering algorithm
 cluster_model = st.selectbox(
@@ -35,32 +30,29 @@ if cluster_model in ['KMeans', 'Gaussian Mixture', 'Agglomerative Hierarchical C
 apply_pca = st.checkbox('Apply PCA for visualization')
 
 # Perform clustering based on selected model
-def perform_clustering(df, model, n_clusters=None):
-    if model == 'KMeans':
-        clustering = KMeans(n_clusters=n_clusters, n_init=10)
-    elif model == 'MeanShift':
-        clustering = MeanShift()
-    elif model == 'DBSCAN':
-        clustering = DBSCAN()
-    elif model == 'Gaussian Mixture':
-        clustering = GaussianMixture(n_components=n_clusters)
-    elif model == 'Agglomerative Hierarchical Clustering':
-        clustering = AgglomerativeClustering(n_clusters=n_clusters)
-    elif model == 'Spectral Clustering':
-        clustering = SpectralClustering(n_clusters=n_clusters)
+if cluster_model == 'KMeans':
+    clustering = KMeans(n_clusters=n_clusters, n_init=10)
+    labels = clustering.fit_predict(df)
 
-    if model == 'Gaussian Mixture':
-        labels = clustering.fit_predict(df)
-    else:
-        labels = clustering.fit_predict(df)
+elif cluster_model == 'MeanShift':
+    clustering = MeanShift()
+    labels = clustering.fit_predict(df)
 
-    return labels
+elif cluster_model == 'DBSCAN':
+    clustering = DBSCAN()
+    labels = clustering.fit_predict(df)
 
-# Perform clustering
-if cluster_model != 'MeanShift':  # MeanShift does not require n_clusters
-    labels = perform_clustering(df, cluster_model, n_clusters=n_clusters)
-else:
-    labels = perform_clustering(df, cluster_model)
+elif cluster_model == 'Gaussian Mixture':
+    clustering = GaussianMixture(n_components=n_clusters)
+    labels = clustering.fit_predict(df)
+
+elif cluster_model == 'Agglomerative Hierarchical Clustering':
+    clustering = AgglomerativeClustering(n_clusters=n_clusters)
+    labels = clustering.fit_predict(df)
+
+elif cluster_model == 'Spectral Clustering':
+    clustering = SpectralClustering(n_clusters=n_clusters)
+    labels = clustering.fit_predict(df)
 
 # Display PCA visualization
 if apply_pca:
@@ -93,6 +85,7 @@ st.write(cluster_mean_stats)
 st.write('Median statistics for each cluster:')
 cluster_median_stats = pd.DataFrame(df).groupby(labels).median()
 st.write(cluster_median_stats)
+
 
 # Median statistics for each cluster
 st.write('Median statistics for each cluster:')
