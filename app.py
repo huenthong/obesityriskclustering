@@ -18,7 +18,7 @@ st.title('Obesity Risk Clustering App')
 
 # Load the scaled cleaned CSV file
 
-df = pd.read_csv('encoded_clean_df.csv')
+df = pd.read_csv('processed_clean_df.csv')
 
 
 # Select clustering algorithm
