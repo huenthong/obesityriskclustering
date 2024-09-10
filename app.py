@@ -31,8 +31,7 @@ if cluster_model == 'KMeans':
     max_iter = st.slider('Maximum iterations', min_value=100, max_value=1000, value=300)
 
 elif cluster_model == 'MeanShift':
-    bin_seeding = st.checkbox('Use bin seeding', value=False)
-    cluster_all = st.checkbox('Assign all points to a cluster', value=True)
+    bandwidth = st.slider('Bandwidth', min_value=0.1, max_value=5.0, value=1.0, step=0.1)
 
 elif cluster_model == 'DBSCAN':
     eps = st.slider('Epsilon', min_value=0.1, max_value=2.0, value=0.5, step=0.1)
@@ -59,7 +58,7 @@ if cluster_model == 'KMeans':
     labels = clustering.fit_predict(df)
 
 elif cluster_model == 'MeanShift':
-    clustering = MeanShift(bin_seeding=bin_seeding, cluster_all=cluster_all)
+    clustering = MeanShift(bandwidth=bandwidth)
     labels = clustering.fit_predict(df)
 
 elif cluster_model == 'DBSCAN':
@@ -86,14 +85,11 @@ if apply_pca:
     pca_df['Cluster'] = labels
 
     st.write('PCA Result:')
-    fig, ax = plt.subplots(figsize=(12, 8))  # Increased figure width for better layout
-    scatter = sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
-    
-    # Adjust legend
-    handles, labels = scatter.get_legend_handles_labels()
-    ax.legend(handles, labels, title='Cluster', loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
-
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     st.pyplot(fig)
+
 # Silhouette Score
 if len(np.unique(labels)) > 1:  # Silhouette score needs at least 2 clusters
     silhouette_avg = silhouette_score(df, labels)
@@ -113,4 +109,3 @@ st.write(cluster_mean_stats)
 st.subheader('Median statistics for each cluster:')
 cluster_median_stats = pd.DataFrame(df).groupby(labels).median()
 st.write(cluster_median_stats)
-
