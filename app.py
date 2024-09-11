@@ -54,7 +54,7 @@ elif cluster_model == 'Spectral Clustering':
     n_neighbors = st.slider('Number of neighbors', min_value=2, max_value=20, value=10)
 
 # Applying PCA for visualization
-apply_pca = st.checkbox('Apply PCA for visualization')
+apply_pca = st.checkbox('Display PCA Visualization')
 
 # Perform clustering based on selected model
 if cluster_model == 'KMeans':
