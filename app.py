@@ -35,22 +35,22 @@ if cluster_model == 'KMeans':
     max_iter = st.slider('Maximum iterations', min_value=100, max_value=1000, value=300)
 
 elif cluster_model == 'MeanShift':
-    bandwidth = st.slider('Bandwidth', min_value=0.1, max_value=10.0, value=1.0, step=0.1)
+    bandwidth = st.slider('Bandwidth', min_value=0.8, max_value=1.5, value=1.1111, step=0.1)
 
 elif cluster_model == 'DBSCAN':
-    eps = st.slider('Epsilon', min_value=0.1, max_value=2.0, value=0.5, step=0.1)
-    min_samples = st.slider('Minimum samples', min_value=1, max_value=50, value=5)
+    eps = st.slider('Epsilon', min_value=0.1, max_value=0.5, value=0.5, step=0.1)
+    min_samples = st.slider('Minimum samples', min_value=3, max_value=12, value=5)
 
 elif cluster_model == 'Gaussian Mixture':
     covariance_type = st.selectbox('Covariance type', ['full', 'tied', 'diag', 'spherical'])
     max_iter = st.slider('Maximum iterations', min_value=100, max_value=1000, value=300)
 
 elif cluster_model == 'Agglomerative Hierarchical Clustering':
-    affinity = st.selectbox('Affinity', ['euclidean', 'manhattan', 'cosine'])
+    affinity = st.selectbox('Affinity', ['euclidean'])
     linkage = st.selectbox('Linkage', ['ward', 'complete', 'average', 'single'])
 
 elif cluster_model == 'Spectral Clustering':
-    affinity = st.selectbox('Affinity', ['nearest_neighbors', 'rbf', 'laplacian', 'poly'])
+    affinity = st.selectbox('Affinity', ['nearest_neighbors', 'rbf'])
     n_neighbors = st.slider('Number of neighbors', min_value=2, max_value=20, value=10)
 
 # Applying PCA for visualization
