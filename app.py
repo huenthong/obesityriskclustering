@@ -14,11 +14,10 @@ st.title('Obesity Risk Clustering App')
 
 # Load the scaled cleaned CSV file
 df = pd.read_csv('clean_df.csv')
-df_scaled = pd.read_csv('pca_df.csv')
 
 # Standardize data
-# scaler = StandardScaler()
-# df_scaled = scaler.fit_transform(df)
+scaler = StandardScaler()
+df_scaled = scaler.fit_transform(df)
 
 # Select clustering algorithm
 cluster_model = st.selectbox(
@@ -34,7 +33,6 @@ if cluster_model in ['KMeans', 'Gaussian Mixture', 'Agglomerative Hierarchical C
 if cluster_model == 'KMeans':
     init_method = st.selectbox('Initialization method', ['k-means++', 'random'])
     max_iter = st.slider('Maximum iterations', min_value=100, max_value=1000, value=300)
-    n_init = st.slider('Number of initializations', min_value=1, max_value=20, value=10)
 
 elif cluster_model == 'MeanShift':
     bandwidth = st.slider('Bandwidth', min_value=0.8, max_value=1.5, value=1.18, step=0.1)
@@ -46,7 +44,6 @@ elif cluster_model == 'DBSCAN':
 elif cluster_model == 'Gaussian Mixture':
     covariance_type = st.selectbox('Covariance type', ['full', 'tied', 'diag', 'spherical'])
     max_iter = st.slider('Maximum iterations', min_value=100, max_value=1000, value=300)
-    n_init = st.slider('Number of initializations', min_value=1, max_value=20, value=10)
 
 elif cluster_model == 'Agglomerative Hierarchical Clustering':
     affinity = st.selectbox('Affinity', ['euclidean'])
@@ -61,7 +58,7 @@ apply_pca = st.checkbox('Display PCA Visualization')
 
 # Perform clustering based on selected model
 if cluster_model == 'KMeans':
-    clustering = KMeans(n_clusters=n_clusters, init=init_method, n_init=n_init, max_iter=max_iter)
+    clustering = KMeans(n_clusters=n_clusters, init=init_method, n_init=10, max_iter=max_iter)
     labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'MeanShift':
@@ -73,8 +70,8 @@ elif cluster_model == 'DBSCAN':
     labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'Gaussian Mixture':
-    clustering = GaussianMixture(n_components=n_clusters, covariance_type=covariance_type, max_iter=max_iter, n_init=n_init)
-    labels = clustering.predict(df_scaled)
+    clustering = GaussianMixture(n_components=n_clusters, covariance_type=covariance_type, max_iter=max_iter)
+    labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'Agglomerative Hierarchical Clustering':
     clustering = AgglomerativeClustering(n_clusters=n_clusters, affinity=affinity, linkage=linkage)
@@ -94,14 +91,15 @@ if apply_pca:
     st.write('PCA Result:')
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
-    if len(np.unique(labels)) > 5:  # Adjust legend if too many clusters
+    # Handle long legends
+    if len(np.unique(labels)) > 5:  # If more than 5 clusters, adjust the legend
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='small', ncol=2)
     else:
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')  # Standard legend position
     st.pyplot(fig)
 
 # Silhouette Score
-if len(np.unique(labels)) > 1:
+if len(np.unique(labels)) > 1:  # Silhouette score needs at least 2 clusters
     silhouette_avg = silhouette_score(df_scaled, labels)
     st.write(f'Silhouette Score: {silhouette_avg:.2f}')
 
