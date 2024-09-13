@@ -16,8 +16,8 @@ st.title('Obesity Risk Clustering App')
 df = pd.read_csv('pca_df.csv')
 
 # Standardize data
-scaler = StandardScaler()
-df_scaled = scaler.fit_transform(df)
+# scaler = StandardScaler()
+# df_scaled = scaler.fit_transform(df)
 
 # Select clustering algorithm
 cluster_model = st.selectbox(
