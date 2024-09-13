@@ -13,7 +13,7 @@ import seaborn as sns
 st.title('Obesity Risk Clustering App')
 
 # Load the scaled cleaned CSV file
-df = pd.read_csv('clean_df.csv')
+df = pd.read_csv('pca_df.csv')
 
 # Standardize data
 scaler = StandardScaler()
