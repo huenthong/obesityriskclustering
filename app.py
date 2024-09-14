@@ -16,6 +16,25 @@ st.title('Obesity Risk Clustering App')
 # Load the dataset (replace with your dataset path)
 df = pd.read_csv('ObesityDataSet.csv')
 
+# Step 1: Create a BMI feature
+df['BMI'] = df['Weight'] / (df['Height'] ** 2)
+
+# Step 2: Categorize Age into bins
+df['Age_Group'] = pd.cut(df['Age'], bins=[0, 18, 35, 60, 100], labels=['Child', 'Adolescent', 'Adult', 'Elderly'])
+
+# Step 3: Create an interaction feature between FAVC and CAEC (Consumption habits)
+df['FAVC_CAEC'] = df['FAVC'] + "_" + df['CAEC']
+
+# Step 4: Create a Healthy Habits Score (combining healthy lifestyle indicators)
+df['Healthy_Score'] = df['FCVC'] + df['FAF'] - df['FAVC'].apply(lambda x: 1 if x == 'yes' else 0)
+
+# Step 5: Convert binary categorical features to 1/0 (like family history and FAVC)
+df['family_history_with_overweight'] = df['family_history_with_overweight'].map({'yes': 1, 'no': 0})
+df['FAVC'] = df['FAVC'].map({'yes': 1, 'no': 0})
+
+# Step 6: Drop redundant columns after creating engineered features
+df.drop(columns=['Height', 'Weight'], inplace=True)  # BMI replaces these
+
 # List of numerical features
 numerical_features = ['Age', 'FCVC', 'NCP', 'CH2O', 'FAF', 'TUE', 'BMI', 'Healthy_Score']
 
@@ -156,17 +175,16 @@ if len(np.unique(labels)) > 1:
     st.write(f'Silhouette Score: {silhouette_avg:.2f}')
 
 # Number of records in each cluster
+unique, counts = np.unique(labels, return_counts=True)
+cluster_count_df = pd.DataFrame(list(zip(unique, counts)), columns=['Cluster', 'Count'])
 st.subheader('Number of records in each cluster:')
-cluster_counts = pd.Series(labels).value_counts().sort_index()
-st.write(cluster_counts)
+st.dataframe(cluster_count_df)
 
-# Mean statistics for each cluster
-st.subheader('Mean statistics for each cluster:')
-cluster_mean_stats = pd.DataFrame(df).groupby(labels).mean()
-st.write(cluster_mean_stats)
+# Mean and Median statistics for each cluster
+st.subheader('Cluster Mean Statistics:')
+st.dataframe(df_final.groupby(labels).mean())
 
-# Median statistics for each cluster
-st.subheader('Median statistics for each cluster:')
-cluster_median_stats = pd.DataFrame(df).groupby(labels).median()
-st.write(cluster_median_stats)
+st.subheader('Cluster Median Statistics:')
+st.dataframe(df_final.groupby(labels).median())
+
 
