@@ -1,95 +1,120 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.cluster import KMeans, MeanShift, DBSCAN, AgglomerativeClustering, SpectralClustering
-from sklearn.mixture import GaussianMixture
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
+from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.metrics import silhouette_score
-from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Streamlit app title
-st.title('Obesity Risk Clustering App')
+st.title('Obesity Risk Clustering App with PCA')
 
 # Load the dataset (replace with your dataset path)
 df = pd.read_csv('ObesityDataSet.csv')
 
-# Step 1: Create a BMI feature
+# Feature engineering (as per your previous steps)
 df['BMI'] = df['Weight'] / (df['Height'] ** 2)
-
-# Step 2: Categorize Age into bins
 df['Age_Group'] = pd.cut(df['Age'], bins=[0, 18, 35, 60, 100], labels=['Child', 'Adolescent', 'Adult', 'Elderly'])
-
-# Step 3: Create an interaction feature between FAVC and CAEC (Consumption habits)
 df['FAVC_CAEC'] = df['FAVC'] + "_" + df['CAEC']
-
-# Step 4: Create a Healthy Habits Score (combining healthy lifestyle indicators)
 df['Healthy_Score'] = df['FCVC'] + df['FAF'] - df['FAVC'].apply(lambda x: 1 if x == 'yes' else 0)
-
-# Step 5: Convert binary categorical features to 1/0 (like family history and FAVC)
 df['family_history_with_overweight'] = df['family_history_with_overweight'].map({'yes': 1, 'no': 0})
 df['FAVC'] = df['FAVC'].map({'yes': 1, 'no': 0})
 
-# Step 6: Drop redundant columns after creating engineered features
-df.drop(columns=['Height', 'Weight'], inplace=True)  # BMI replaces these
+# Drop redundant columns
+df.drop(columns=['Height', 'Weight'], inplace=True)
 
-# List of numerical features
-numerical_features = ['Age', 'FCVC', 'NCP', 'CH2O', 'FAF', 'TUE', 'BMI', 'Healthy_Score']
+# Separate features (since there's no target in clustering)
+X = df.select_dtypes(include=[np.number])
 
-# Boxplot visualization for numerical features (before outlier removal)
-st.subheader('Boxplot of Numerical Features (Before Outlier Removal)')
-fig, axes = plt.subplots(2, 4, figsize=(15, 10))
-axes = axes.flatten()
-for i, feature in enumerate(numerical_features):
-    sns.boxplot(x=df[feature], ax=axes[i])
-    axes[i].set_title(f'Boxplot of {feature}')
-st.pyplot(fig)
+# Step 2: Scale numerical features
+numerical_features = X.select_dtypes(include=['number']).columns
+scaler = RobustScaler()
+X_scaled = X.copy()
+X_scaled[numerical_features] = scaler.fit_transform(X[numerical_features])
 
-# Remove outliers using Z-score (values more than 3 standard deviations from the mean)
-numerical_features_excl_age = [f for f in numerical_features if f != 'Age']
-for feature in numerical_features_excl_age:
-    df = df[(np.abs(stats.zscore(df[feature])) < 3)]
+# Step 3: Apply PCA
+apply_pca = st.checkbox('Apply PCA (95% Variance Retained)')
+if apply_pca:
+    pca = PCA(n_components=0.95)
+    X_pca = pca.fit_transform(X_scaled)
 
-# Check and remove duplicate rows
-df = df.drop_duplicates()
+    # Convert PCA result to DataFrame
+    pca_df = pd.DataFrame(X_pca, columns=[f'PC{i+1}' for i in range(X_pca.shape[1])])
 
-# Handling skewness (log transformation for skewed features)
-for feature in numerical_features_excl_age:
-    if df[feature].skew() > 1:
-        df[feature] = np.log1p(df[feature])
+    # Explained variance
+    explained_variance = pca.explained_variance_ratio_
+    cumulative_variance = np.cumsum(explained_variance)
 
-# One-Hot Encode nominal categorical features
-nominal_features = ['Gender', 'FAVC_CAEC', 'SMOKE', 'SCC', 'CALC', 'MTRANS', 'CAEC']
-onehot_encoder = OneHotEncoder(drop='first', sparse_output=False)
-encoded_nominal = onehot_encoder.fit_transform(df[nominal_features])
-encoded_nominal_df = pd.DataFrame(encoded_nominal, columns=onehot_encoder.get_feature_names_out(nominal_features))
+    st.write(f"Explained variance by components: {explained_variance}")
+    st.write(f"Cumulative explained variance: {cumulative_variance}")
 
-# Label Encode ordinal features
-ordinal_features = ['NObeyesdad', 'Age_Group']
-label_encoder = LabelEncoder()
-df['NObeyesdad'] = label_encoder.fit_transform(df['NObeyesdad'])
-df['Age_Group'] = label_encoder.fit_transform(df['Age_Group'])
+    # Visualize PCA results
+    st.subheader('PCA Components')
+    st.write(pca_df.describe())
 
-# Drop original nominal columns and concatenate encoded ones
-df_numerical_only = df.drop(columns=nominal_features).reset_index(drop=True)
-df_encoded = pd.concat([df_numerical_only, encoded_nominal_df], axis=1)
+# Step 4: Elbow Method and Silhouette Scores for KMeans
+elbow_silhouette_analysis = st.checkbox('Run Elbow Method and Silhouette Score Analysis')
+if elbow_silhouette_analysis:
+    st.subheader('Elbow Method and Silhouette Score for KMeans')
 
-# Drop weakly correlated and highly correlated features
-weak_corr_features = ['FAVC', 'FCVC', 'NCP', 'CH2O', 'TUE', 'Gender_Male', 'SMOKE_yes', 'SCC_yes']
-df_clean = df_encoded.drop(columns=weak_corr_features)
+    # Perform PCA with 5 components for clustering
+    pca = PCA(n_components=5)
+    X_pca_5 = pca.fit_transform(X_scaled)
+    scaled_pca_df = StandardScaler().fit_transform(X_pca_5)
 
-# Final feature selection (further columns based on correlation)
-further_columns_to_drop = ['FAVC_CAEC_yes_Sometimes', 'CAEC_Sometimes', 'Healthy_Score', 'CAEC_Frequently']
-df_final = df_clean.drop(columns=further_columns_to_drop)
+    # Elbow Method (Inertia)
+    inertia = []
+    k_range = range(1, 11)
+    for k in k_range:
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(scaled_pca_df)
+        inertia.append(kmeans.inertia_)
 
-# Standardize data
-scaler = StandardScaler()
-df_scaled = scaler.fit_transform(df_final)
+    # Plot Elbow Method
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
-# Display the shape of the dataset after preprocessing
-st.write(f"Shape of the preprocessed dataset: {df_final.shape}")
+    # Elbow Method plot
+    axes[0].plot(k_range, inertia, marker='o')
+    axes[0].set_xlabel('Number of Clusters')
+    axes[0].set_ylabel('Inertia')
+    axes[0].set_title('Elbow Method for Optimal Number of Clusters')
+
+    # Silhouette Score
+    silhouette_scores = []
+    valid_k = []
+    for k in k_range:
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(scaled_pca_df)
+        labels = kmeans.labels_
+
+        if len(np.unique(labels)) > 1:
+            silhouette_avg = silhouette_score(scaled_pca_df, labels)
+            silhouette_scores.append(silhouette_avg)
+            valid_k.append(k)
+        else:
+            silhouette_scores.append(np.nan)
+
+    # Filter out NaN values to avoid dimension mismatch
+    filtered_valid_k = [k for k, s in zip(k_range, silhouette_scores) if not np.isnan(s)]
+    filtered_silhouette_scores = [s for s in silhouette_scores if not np.isnan(s)]
+
+    # Silhouette Score plot
+    axes[1].plot(filtered_valid_k, filtered_silhouette_scores, marker='o')
+    axes[1].set_xlabel('Number of Clusters')
+    axes[1].set_ylabel('Silhouette Score')
+    axes[1].set_title('Silhouette Score for Different Number of Clusters')
+
+    plt.tight_layout()
+    st.pyplot(fig)
+
+# Perform clustering based on selected model after EDA
+st.subheader('Proceed to Clustering Model Selection')
+cluster_model = st.selectbox(
+    'Select a clustering model',
+    ('KMeans', 'MeanShift', 'DBSCAN', 'Gaussian Mixture', 'Agglomerative Hierarchical Clustering', 'Spectral Clustering')
+)
 
 # Select clustering algorithm
 cluster_model = st.selectbox(
