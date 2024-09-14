@@ -77,7 +77,7 @@ elif cluster_model == 'Agglomerative Hierarchical Clustering':
     labels = clustering.fit_predict(df_scaled)
 
 elif cluster_model == 'Spectral Clustering':
-    clustering = SpectralClustering(n_clusters=n_clusters, affinity=affinity, n_neighbors=n_neighbors)
+    clustering = SpectralClustering(n_clusters=n_clusters, affinity=affinity)
     labels = clustering.fit_predict(df_scaled)
 
 # Display PCA visualization
