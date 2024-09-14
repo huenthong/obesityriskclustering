@@ -51,7 +51,6 @@ elif cluster_model == 'Agglomerative Hierarchical Clustering':
 
 elif cluster_model == 'Spectral Clustering':
     affinity = st.selectbox('Affinity', ['nearest_neighbors', 'rbf'])
-    n_neighbors = st.slider('Number of neighbors', min_value=2, max_value=20, value=10)
 
 # Applying PCA for visualization
 apply_pca = st.checkbox('Display PCA Visualization')
