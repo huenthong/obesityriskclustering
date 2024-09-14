@@ -109,13 +109,6 @@ if elbow_silhouette_analysis:
     plt.tight_layout()
     st.pyplot(fig)
 
-# Perform clustering based on selected model after EDA
-st.subheader('Proceed to Clustering Model Selection')
-cluster_model = st.selectbox(
-    'Select a clustering model',
-    ('KMeans', 'MeanShift', 'DBSCAN', 'Gaussian Mixture', 'Agglomerative Hierarchical Clustering', 'Spectral Clustering')
-)
-
 # Select clustering algorithm
 cluster_model = st.selectbox(
     'Select a clustering model',
