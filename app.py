@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MeanShift, DBSCAN, AgglomerativeClustering, SpectralClustering
+from sklearn.mixture import GaussianMixture
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.metrics import silhouette_score
@@ -14,7 +15,7 @@ st.title('Obesity Risk Clustering App with PCA')
 # Load the dataset (replace with your dataset path)
 df = pd.read_csv('ObesityDataSet.csv')
 
-# Feature engineering (as per your previous steps)
+# Feature engineering
 df['BMI'] = df['Weight'] / (df['Height'] ** 2)
 df['Age_Group'] = pd.cut(df['Age'], bins=[0, 18, 35, 60, 100], labels=['Child', 'Adolescent', 'Adult', 'Elderly'])
 df['FAVC_CAEC'] = df['FAVC'] + "_" + df['CAEC']
@@ -68,7 +69,7 @@ if elbow_silhouette_analysis:
     inertia = []
     k_range = range(1, 11)
     for k in k_range:
-        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)  # Set n_init explicitly to avoid warning
         kmeans.fit(scaled_pca_df)
         inertia.append(kmeans.inertia_)
 
@@ -85,7 +86,7 @@ if elbow_silhouette_analysis:
     silhouette_scores = []
     valid_k = []
     for k in k_range:
-        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)  # Set n_init explicitly to avoid warning
         kmeans.fit(scaled_pca_df)
         labels = kmeans.labels_
 
@@ -143,12 +144,9 @@ elif cluster_model == 'Spectral Clustering':
     affinity = st.selectbox('Affinity', ['nearest_neighbors', 'rbf'])
     n_neighbors = st.slider('Number of neighbors', min_value=2, max_value=20, value=10)
 
-# Applying PCA for visualization
-apply_pca = st.checkbox('Display PCA Visualization')
-
 # Perform clustering based on selected model
 if cluster_model == 'KMeans':
-    clustering = KMeans(n_clusters=n_clusters, init=init_method, max_iter=max_iter)
+    clustering = KMeans(n_clusters=n_clusters, init=init_method, max_iter=max_iter, n_init=10)
     labels = clustering.fit_predict(X_scaled)
 
 elif cluster_model == 'MeanShift':
@@ -172,37 +170,34 @@ elif cluster_model == 'Spectral Clustering':
     labels = clustering.fit_predict(X_scaled)
 
 # Display PCA visualization
-if apply_pca:
-    pca = PCA(n_components=2)
-    pca_data = pca.fit_transform(X_scaled)
-    pca_df = pd.DataFrame(pca_data, columns=['PC1', 'PC2'])
-    pca_df['Cluster'] = labels
+apply_pca_viz = st.checkbox('Display PCA Visualization')
+
+if apply_pca_viz:
+    pca_viz = PCA(n_components=2)
+    pca_data = pca_viz.fit_transform(X_scaled)
+    pca_df_viz = pd.DataFrame(pca_data, columns=['PC1', 'PC2'])
+    pca_df_viz['Cluster'] = labels
 
     st.write('PCA Result:')
     fig, ax = plt.subplots(figsize=(10, 8))
-    sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
+    sns.scatterplot(data=pca_df_viz, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
     if len(np.unique(labels)) > 5:
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='small', ncol=2)
     else:
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
     st.pyplot(fig)
 
-# Silhouette Score
-if len(np.unique(labels)) > 1:
-    silhouette_avg = silhouette_score(X_scaled, labels)
-    st.write(f'Silhouette Score: {silhouette_avg:.2f}')
+# Mean and Median statistics for each cluster (only for numeric columns)
+numeric_columns = df.select_dtypes(include=[np.number]).columns
 
-# Number of records in each cluster
-unique, counts = np.unique(labels, return_counts=True)
-cluster_count_df = pd.DataFrame(list(zip(unique, counts)), columns=['Cluster', 'Count'])
-st.subheader('Number of records in each cluster:')
-st.dataframe(cluster_count_df)
-
-# Mean and Median statistics for each cluster
+# Mean statistics
+cluster_mean_stats = df.groupby(labels)[numeric_columns].mean()
 st.subheader('Cluster Mean Statistics:')
-st.dataframe(df.groupby(labels).mean())
+st.dataframe(cluster_mean_stats)
 
+# Median statistics
+cluster_median_stats = df.groupby(labels)[numeric_columns].median()
 st.subheader('Cluster Median Statistics:')
-st.dataframe(df.groupby(labels).median())
-
+st.dataframe(cluster_median_stats)
 
