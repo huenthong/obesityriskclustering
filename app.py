@@ -3,112 +3,41 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans, MeanShift, DBSCAN, AgglomerativeClustering, SpectralClustering
 from sklearn.mixture import GaussianMixture
-from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, RobustScaler
-from sklearn.metrics import silhouette_score
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Streamlit app title
-st.title('Obesity Risk Clustering App with PCA')
+# Function to perform preprocessing
+def preprocess_data(df):
+    # Feature engineering
+    df['BMI'] = df['Weight'] / (df['Height'] ** 2)
+    df['Age_Group'] = pd.cut(df['Age'], bins=[0, 18, 35, 60, 100], labels=['Child', 'Adolescent', 'Adult', 'Elderly'])
+    df['FAVC_CAEC'] = df['FAVC'] + "_" + df['CAEC']
+    df['Healthy_Score'] = df['FCVC'] + df['FAF'] - df['FAVC'].apply(lambda x: 1 if x == 'yes' else 0)
+    df['family_history_with_overweight'] = df['family_history_with_overweight'].map({'yes': 1, 'no': 0})
+    df['FAVC'] = df['FAVC'].map({'yes': 1, 'no': 0})
 
-# Load the dataset (replace with your dataset path)
+    # Drop redundant columns
+    df.drop(columns=['Height', 'Weight'], inplace=True)
+
+    return df
+
+# Load and preprocess the dataset
 df = pd.read_csv('ObesityDataSet.csv')
-
-# Feature engineering
-df['BMI'] = df['Weight'] / (df['Height'] ** 2)
-df['Age_Group'] = pd.cut(df['Age'], bins=[0, 18, 35, 60, 100], labels=['Child', 'Adolescent', 'Adult', 'Elderly'])
-df['FAVC_CAEC'] = df['FAVC'] + "_" + df['CAEC']
-df['Healthy_Score'] = df['FCVC'] + df['FAF'] - df['FAVC'].apply(lambda x: 1 if x == 'yes' else 0)
-df['family_history_with_overweight'] = df['family_history_with_overweight'].map({'yes': 1, 'no': 0})
-df['FAVC'] = df['FAVC'].map({'yes': 1, 'no': 0})
-
-# Drop redundant columns
-df.drop(columns=['Height', 'Weight'], inplace=True)
+df = preprocess_data(df)
 
 # Separate features (since there's no target in clustering)
 X = df.select_dtypes(include=[np.number])
 
-# Step 2: Scale numerical features
+# Scale numerical features
 numerical_features = X.select_dtypes(include=['number']).columns
 scaler = RobustScaler()
 X_scaled = X.copy()
 X_scaled[numerical_features] = scaler.fit_transform(X[numerical_features])
 
-# Step 3: Apply PCA
-apply_pca = st.checkbox('Apply PCA (95% Variance Retained)')
-if apply_pca:
-    pca = PCA(n_components=0.95)
-    X_pca = pca.fit_transform(X_scaled)
-
-    # Convert PCA result to DataFrame
-    pca_df = pd.DataFrame(X_pca, columns=[f'PC{i+1}' for i in range(X_pca.shape[1])])
-
-    # Explained variance
-    explained_variance = pca.explained_variance_ratio_
-    cumulative_variance = np.cumsum(explained_variance)
-
-    st.write(f"Explained variance by components: {explained_variance}")
-    st.write(f"Cumulative explained variance: {cumulative_variance}")
-
-    # Visualize PCA results
-    st.subheader('PCA Components')
-    st.write(pca_df.describe())
-
-# Step 4: Elbow Method and Silhouette Scores for KMeans
-elbow_silhouette_analysis = st.checkbox('Run Elbow Method and Silhouette Score Analysis')
-if elbow_silhouette_analysis:
-    st.subheader('Elbow Method and Silhouette Score for KMeans')
-
-    # Perform PCA with 5 components for clustering
-    pca = PCA(n_components=5)
-    X_pca_5 = pca.fit_transform(X_scaled)
-    scaled_pca_df = StandardScaler().fit_transform(X_pca_5)
-
-    # Elbow Method (Inertia)
-    inertia = []
-    k_range = range(1, 11)
-    for k in k_range:
-        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)  # Set n_init explicitly to avoid warning
-        kmeans.fit(scaled_pca_df)
-        inertia.append(kmeans.inertia_)
-
-    # Plot Elbow Method
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-
-    # Elbow Method plot
-    axes[0].plot(k_range, inertia, marker='o')
-    axes[0].set_xlabel('Number of Clusters')
-    axes[0].set_ylabel('Inertia')
-    axes[0].set_title('Elbow Method for Optimal Number of Clusters')
-
-    # Silhouette Score
-    silhouette_scores = []
-    valid_k = []
-    for k in k_range:
-        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)  # Set n_init explicitly to avoid warning
-        kmeans.fit(scaled_pca_df)
-        labels = kmeans.labels_
-
-        if len(np.unique(labels)) > 1:
-            silhouette_avg = silhouette_score(scaled_pca_df, labels)
-            silhouette_scores.append(silhouette_avg)
-            valid_k.append(k)
-        else:
-            silhouette_scores.append(np.nan)
-
-    # Filter out NaN values to avoid dimension mismatch
-    filtered_valid_k = [k for k, s in zip(k_range, silhouette_scores) if not np.isnan(s)]
-    filtered_silhouette_scores = [s for s in silhouette_scores if not np.isnan(s)]
-
-    # Silhouette Score plot
-    axes[1].plot(filtered_valid_k, filtered_silhouette_scores, marker='o')
-    axes[1].set_xlabel('Number of Clusters')
-    axes[1].set_ylabel('Silhouette Score')
-    axes[1].set_title('Silhouette Score for Different Number of Clusters')
-
-    plt.tight_layout()
-    st.pyplot(fig)
+# Streamlit app title
+st.title('Obesity Risk Clustering App')
 
 # Select clustering algorithm
 cluster_model = st.selectbox(
@@ -178,26 +107,11 @@ if apply_pca_viz:
     pca_df_viz = pd.DataFrame(pca_data, columns=['PC1', 'PC2'])
     pca_df_viz['Cluster'] = labels
 
-    st.write('PCA Result:')
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.scatterplot(data=pca_df_viz, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
-    if len(np.unique(labels)) > 5:
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='small', ncol=2)
-    else:
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-
-    st.pyplot(fig)
-
-# Mean and Median statistics for each cluster (only for numeric columns)
-numeric_columns = df.select_dtypes(include=[np.number]).columns
-
-# Mean statistics
-cluster_mean_stats = df.groupby(labels)[numeric_columns].mean()
-st.subheader('Cluster Mean Statistics:')
-st.dataframe(cluster_mean_stats)
-
-# Median statistics
-cluster_median_stats = df.groupby(labels)[numeric_columns].median()
-st.subheader('Cluster Median Statistics:')
-st.dataframe(cluster_median_stats)
-
+    # Plot PCA results
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='PC1', y='PC2', hue='Cluster', data=pca_df_viz, palette='viridis')
+    plt.title('PCA of Clustering Results')
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
+    plt.legend(title='Cluster')
+    st.pyplot()
