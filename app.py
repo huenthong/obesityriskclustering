@@ -107,11 +107,32 @@ if apply_pca_viz:
     pca_df_viz = pd.DataFrame(pca_data, columns=['PC1', 'PC2'])
     pca_df_viz['Cluster'] = labels
 
-    # Plot PCA results
-    plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='PC1', y='PC2', hue='Cluster', data=pca_df_viz, palette='viridis')
-    plt.title('PCA of Clustering Results')
-    plt.xlabel('Principal Component 1')
-    plt.ylabel('Principal Component 2')
-    plt.legend(title='Cluster')
-    st.pyplot()
+    st.write('PCA Result:')
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='Cluster', palette='Set1', ax=ax)
+    # Handle long legends
+    if len(np.unique(labels)) > 5:  # If more than 5 clusters, adjust the legend
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='small', ncol=2)
+    else:
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')  # Standard legend position
+    st.pyplot(fig)
+
+# Silhouette Score
+if len(np.unique(labels)) > 1:  # Silhouette score needs at least 2 clusters
+    silhouette_avg = silhouette_score(df_scaled, labels)
+    st.write(f'Silhouette Score: {silhouette_avg:.2f}')
+
+# Number of records in each cluster
+st.subheader('Number of records in each cluster:')
+cluster_counts = pd.Series(labels).value_counts().sort_index()
+st.write(cluster_counts)
+
+# Mean statistics for each cluster
+st.subheader('Mean statistics for each cluster:')
+cluster_mean_stats = pd.DataFrame(df).groupby(labels).mean()
+st.write(cluster_mean_stats)
+
+# Median statistics for each cluster
+st.subheader('Median statistics for each cluster:')
+cluster_median_stats = pd.DataFrame(df).groupby(labels).median()
+st.write(cluster_median_stats)
