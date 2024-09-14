@@ -35,11 +35,11 @@ if cluster_model == 'KMeans':
     max_iter = st.slider('Maximum iterations', min_value=100, max_value=1000, value=300)
 
 elif cluster_model == 'MeanShift':
-    bandwidth = st.slider('Bandwidth', min_value=0.8, max_value=1.5, value=1.5, step=0.1)
+    bandwidth = st.slider('Bandwidth', min_value=0.8, max_value=1.5, value=1.18, step=0.1)
 
 elif cluster_model == 'DBSCAN':
     eps = st.slider('Epsilon', min_value=0.1, max_value=0.5, value=0.5, step=0.1)
-    min_samples = st.slider('Minimum samples', min_value=3, max_value=12, value=10)
+    min_samples = st.slider('Minimum samples', min_value=3, max_value=12, value=6)
 
 elif cluster_model == 'Gaussian Mixture':
     covariance_type = st.selectbox('Covariance type', ['full', 'tied', 'diag', 'spherical'])
