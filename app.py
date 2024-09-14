@@ -149,32 +149,32 @@ apply_pca = st.checkbox('Display PCA Visualization')
 # Perform clustering based on selected model
 if cluster_model == 'KMeans':
     clustering = KMeans(n_clusters=n_clusters, init=init_method, max_iter=max_iter)
-    labels = clustering.fit_predict(df_scaled)
+    labels = clustering.fit_predict(X_scaled)
 
 elif cluster_model == 'MeanShift':
     clustering = MeanShift(bandwidth=bandwidth)
-    labels = clustering.fit_predict(df_scaled)
+    labels = clustering.fit_predict(X_scaled)
 
 elif cluster_model == 'DBSCAN':
     clustering = DBSCAN(eps=eps, min_samples=min_samples)
-    labels = clustering.fit_predict(df_scaled)
+    labels = clustering.fit_predict(X_scaled)
 
 elif cluster_model == 'Gaussian Mixture':
     clustering = GaussianMixture(n_components=n_clusters, covariance_type=covariance_type, max_iter=max_iter)
-    labels = clustering.fit_predict(df_scaled)
+    labels = clustering.fit_predict(X_scaled)
 
 elif cluster_model == 'Agglomerative Hierarchical Clustering':
     clustering = AgglomerativeClustering(n_clusters=n_clusters, affinity=affinity, linkage=linkage)
-    labels = clustering.fit_predict(df_scaled)
+    labels = clustering.fit_predict(X_scaled)
 
 elif cluster_model == 'Spectral Clustering':
     clustering = SpectralClustering(n_clusters=n_clusters, affinity=affinity, n_neighbors=n_neighbors)
-    labels = clustering.fit_predict(df_scaled)
+    labels = clustering.fit_predict(X_scaled)
 
 # Display PCA visualization
 if apply_pca:
     pca = PCA(n_components=2)
-    pca_data = pca.fit_transform(df_scaled)
+    pca_data = pca.fit_transform(X_scaled)
     pca_df = pd.DataFrame(pca_data, columns=['PC1', 'PC2'])
     pca_df['Cluster'] = labels
 
@@ -189,7 +189,7 @@ if apply_pca:
 
 # Silhouette Score
 if len(np.unique(labels)) > 1:
-    silhouette_avg = silhouette_score(df_scaled, labels)
+    silhouette_avg = silhouette_score(X_scaled, labels)
     st.write(f'Silhouette Score: {silhouette_avg:.2f}')
 
 # Number of records in each cluster
@@ -200,9 +200,9 @@ st.dataframe(cluster_count_df)
 
 # Mean and Median statistics for each cluster
 st.subheader('Cluster Mean Statistics:')
-st.dataframe(df_final.groupby(labels).mean())
+st.dataframe(df.groupby(labels).mean())
 
 st.subheader('Cluster Median Statistics:')
-st.dataframe(df_final.groupby(labels).median())
+st.dataframe(df.groupby(labels).median())
 
 
